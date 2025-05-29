@@ -1,4 +1,4 @@
-# Agente RAG com Memória Conversacional e Reranking
+# Agente RAG e Reranking
 
 ## 1. Introdução e Cenário
 
