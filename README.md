@@ -11,6 +11,9 @@ Para este projeto, o documento de texto escolhido como base de conhecimento é *
 * **Localização Esperada:** O arquivo de texto do documento (ex: `Dom_Casmurro.txt`) deve ser colocado dentro do diretório `src/data/`. O agente está configurado por padrão para procurar por `src/data/Dom_Casmurro.txt` através de um caminho relativo à sua própria localização.
 
 ## 3. Estrutura de Pastas do Projeto
+
+A estrutura de pastas do projeto é organizada da seguinte forma:
+
 ```text
 RAG-RERANKING-AGENT/
 ├── .venv/
