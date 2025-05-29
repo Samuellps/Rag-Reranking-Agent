@@ -85,12 +85,11 @@ RAG-RERANKING-AGENT/
 
 * **`agent.py`:**
     * `Agent`: Orquestra o pipeline RAG usando LangGraph.
-    * Implementa **memória conversacional** usando `RunnableWithMessageHistory`, permitindo que o agente lembre de interações anteriores dentro de uma mesma sessão.
     * Utiliza um **prompt de sistema principal (`AGENT_SYSTEM_PROMPT_TEXT`) embutido** que guia o `gpt-4o-mini` sobre seu papel, quando e como usar a ferramenta `search_text`, e como lidar com a ausência de resultados.
     * Opcionalmente aplica a técnica **HyDE** para refinar a query de busca.
     * Chama a ferramenta `search_text` (que interage com `ContextGenerator` e `SimpleVectorDB`) para buscar informações.
     * Opcionalmente aplica um **threshold de similaridade** aos resultados (lógica agora mais integrada ao fluxo de decisão do LLM com base no output da ferramenta).
-    * Gera a resposta final ao usuário com base no contexto recuperado e no histórico da conversa.
+    * Gera a resposta final ao usuário com base no contexto recuperado 
 
 * **`configs.py`:**
     * Centraliza flags e parâmetros como `USE_RERANK` (padrão `False`), `USE_THRESHOLD` (padrão `True`), `SIMILARITY_THRESHOLD` (padrão `0.5`), `USE_HYDE` (padrão `False`), e `CHUNK_SIZE` (padrão `500` tokens). A variável `MODEL_EMBED` foi removida por não estar em uso.
@@ -106,9 +105,9 @@ Após a configuração completa:
     python -m src.agent
     ```
 3.  **Interaja:**
-    * O script iniciará e mostrará: "Iniciando Agente Conversacional de Documentos..." seguido por "Agente pronto. Sessão ID: ... Digite 'sair' para terminar."
-    * Digite suas perguntas sobre o documento no prompt "Você: " e pressione Enter.
-    * Para encerrar a conversa, digite `sair`.
+    * O script iniciará e mostrará: "Iniciando Agente 
+    "Você: " e pressione Enter.
+.
 
     **Primeira Execução para um Novo Documento:**
     Se for a primeira vez que o agente é executado com um novo `doc_path` (ou se os arquivos processados em `src/data/` forem removidos), o sistema realizará todo o pré-processamento:
