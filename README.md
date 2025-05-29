@@ -2,7 +2,7 @@
 
 ## 1. Introdução e Cenário
 
-Este projeto implementa um Agente conversacional avançado capaz de responder a perguntas sobre um documento específico utilizando um Modelo de Linguagem Grande (LLM). O sistema emprega técnicas de RAG (Retrieval Augmented Generation), incluindo processamento de texto, geração de "contextos de ponte" para chunks de texto, criação de embeddings, busca vetorial, reranking opcional e memória conversacional para interações contínuas. O objetivo é demonstrar a aplicação prática de conceitos de LLMs e Agentes na solução de problemas de busca e resposta em documentos.
+Este projeto implementa um Agente conversacional capaz de responder a perguntas sobre um documento específico utilizando LLM. O sistema emprega técnicas de RAG , incluindo processamento de texto, geração de "contextos de ponte" para chunks de texto, criação de embeddings, busca vetorial, reranking opcional e. O objetivo é demonstrar a aplicação prática de conceitos de LLMs e Agentes na solução de problemas de busca e resposta em documentos.
 
 ## 2. Documento Utilizado
 
@@ -11,21 +11,22 @@ Para este projeto, o documento de texto escolhido como base de conhecimento é *
 * **Localização Esperada:** O arquivo de texto do documento (ex: `Dom_Casmurro.txt`) deve ser colocado dentro do diretório `src/data/`. O agente está configurado por padrão para procurar por `src/data/Dom_Casmurro.txt` através de um caminho relativo à sua própria localização.
 
 ## 3. Estrutura de Pastas do Projeto
+```text
 RAG-RERANKING-AGENT/
-├── .venv/                     # Diretório do ambiente virtual
-├── src/                       # Código fonte principal
-│   ├── pycache/
-│   ├── data/                 # Para documentos de texto e dados gerados (JSON, PKL)
-│   │   └── Dom_Casmurro.txt  # Exemplo de documento
-│   ├── init.py         # Torna 'src' um pacote Python
-│   ├── agent.py              # Define a classe Agent e o fluxo RAG com memória
-│   ├── configs.py            # Configurações do projeto
-│   ├── document_processor.py # Classes DocumentProcessor e ContextGenerator
-│   └── simple_vectorDB.py    # Classe SimpleVectorDB para embeddings e busca
-├── .env                       # Arquivo para variáveis de ambiente (chaves de API)
-├── .gitignore                 # Especifica arquivos não rastreados pelo Git
-├── pyproject.toml             # Define metadados do projeto e dependências
-└── README.md                  # Este arquivo
+├── .venv/
+├── src/
+│   ├── __pycache__/
+│   ├── data/
+│   │   └── Dom_Casmurro.txt
+│   ├── __init__.py
+│   ├── agent.py
+│   ├── configs.py
+│   ├── document_processor.py
+│   └── simple_vectorDB.py
+├── .env
+├── .gitignore
+├── pyproject.toml
+└── README.md
 
 ## 4. Configuração do Ambiente
 
