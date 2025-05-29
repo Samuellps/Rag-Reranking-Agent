@@ -30,6 +30,7 @@ RAG-RERANKING-AGENT/
 ├── .gitignore
 ├── pyproject.toml
 └── README.md
+```
 
 ## 4. Configuração do Ambiente
 
