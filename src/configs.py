@@ -11,10 +11,10 @@ USE_RERANK = False
 
 # --- Configurações de filtragem ---
 USE_THRESHOLD = True
-SIMILARITY_THRESHOLD = 0.5
+SIMILARITY_THRESHOLD = 0.2
 
 # --- Configurações do Hyde RAG
-USE_HYDE = False
+USE_HYDE = True
 
 
 # --- Maxímo de tokens por chunk ---

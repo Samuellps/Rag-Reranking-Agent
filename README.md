@@ -1,45 +1,37 @@
-# Agente RAG com Reranking para Perguntas e Respostas sobre Documentos
+# Agente RAG com Memória Conversacional e Reranking
 
 ## 1. Introdução e Cenário
 
-Este projeto foi desenvolvido como parte de um teste técnico e demonstra a criação de um Agente capaz de responder a perguntas sobre um documento específico utilizando um Modelo de Linguagem Grande (LLM). [cite: 1] O sistema emprega técnicas de RAG (Retrieval Augmented Generation), processamento de texto, geração de embeddings, busca vetorial e reranking para fornecer respostas contextualmente relevantes e baseadas no conteúdo do documento fornecido. O objetivo é demonstrar a aplicação prática de conceitos de LLMs e Agentes na solução de problemas reais. [cite: 9, 10]
+Este projeto implementa um Agente conversacional avançado capaz de responder a perguntas sobre um documento específico utilizando um Modelo de Linguagem Grande (LLM). O sistema emprega técnicas de RAG (Retrieval Augmented Generation), incluindo processamento de texto, geração de "contextos de ponte" para chunks de texto, criação de embeddings, busca vetorial, reranking opcional e memória conversacional para interações contínuas. O objetivo é demonstrar a aplicação prática de conceitos de LLMs e Agentes na solução de problemas de busca e resposta em documentos.
 
 ## 2. Documento Utilizado
 
-Para este projeto, o documento de texto escolhido foi **"Dom Casmurro" de Machado de Assis**, uma obra em domínio público. [cite: 2]
+Para este projeto, o documento de texto escolhido como base de conhecimento é **"Dom Casmurro" de Machado de Assis**.
 
-* **Localização Esperada:** O arquivo de texto do documento (ex: `Dom_Casmurro.txt`) deve ser colocado dentro do diretório `src/data/`. O agente está configurado por padrão para procurar por `src/data/Dom_Casmurro.txt`.
+* **Localização Esperada:** O arquivo de texto do documento (ex: `Dom_Casmurro.txt`) deve ser colocado dentro do diretório `src/data/`. O agente está configurado por padrão para procurar por `src/data/Dom_Casmurro.txt` através de um caminho relativo à sua própria localização.
 
 ## 3. Estrutura de Pastas do Projeto
-
-A estrutura de pastas do projeto é organizada da seguinte forma:
-
 RAG-RERANKING-AGENT/
-├── .venv/                     # Diretório do ambiente virtual (criado pelo uv)
-├── src/                       # Código fonte principal do projeto
-│   ├── __pycache__/          # Cache do Python
-│   ├── data/                 # Diretório para armazenar documentos de texto e dados gerados (JSON, PKL)
-│   │   └── Dom_Casmurro.txt  # Exemplo de documento de texto
-│   ├── __init__.py         # Torna 'src' um pacote Python
-│   ├── agent.py              # Define a classe Agent e o fluxo principal do RAG
-│   ├── configs.py            # Configurações do projeto (flags, thresholds, etc.)
+├── .venv/                     # Diretório do ambiente virtual
+├── src/                       # Código fonte principal
+│   ├── pycache/
+│   ├── data/                 # Para documentos de texto e dados gerados (JSON, PKL)
+│   │   └── Dom_Casmurro.txt  # Exemplo de documento
+│   ├── init.py         # Torna 'src' um pacote Python
+│   ├── agent.py              # Define a classe Agent e o fluxo RAG com memória
+│   ├── configs.py            # Configurações do projeto
 │   ├── document_processor.py # Classes DocumentProcessor e ContextGenerator
-│   ├── simple_vectorDB.py    # Classe SimpleVectorDB para embeddings e busca
-│   └── prompts.py            # (Necessário se agent.py importar prompts daqui)
+│   └── simple_vectorDB.py    # Classe SimpleVectorDB para embeddings e busca
 ├── .env                       # Arquivo para variáveis de ambiente (chaves de API)
 ├── .gitignore                 # Especifica arquivos não rastreados pelo Git
 ├── pyproject.toml             # Define metadados do projeto e dependências
 └── README.md                  # Este arquivo
 
-*(Baseado na imagem fornecida e nas importações dos scripts)*
-
 ## 4. Configuração do Ambiente
-
-Siga os passos abaixo para configurar e executar o projeto:
 
 ### 4.1. Pré-requisitos
 * Python 3.9 ou superior.
-* `uv` (ferramenta de gerenciamento de pacotes Python). Se não tiver, instale com `pip install uv`.
+* `uv` (ferramenta de gerenciamento de pacotes Python). Se não tiver, instale com `pip install uv` ou conforme as instruções oficiais.
 
 ### 4.2. Passos de Instalação
 1.  **Clone o repositório:**
@@ -63,114 +55,102 @@ Siga os passos abaixo para configurar e executar o projeto:
     ```bash
     uv pip install -e .
     ```
+    Isso instalará todas as bibliotecas listadas no `pyproject.toml`, incluindo `langchain`, `langgraph`, `openai`, `cohere`, `numpy`, etc.
+
 4.  **Configure as Variáveis de Ambiente:**
     * Crie um arquivo chamado `.env` na raiz do projeto (`RAG-RERANKING-AGENT/.env`).
-    * Adicione suas chaves de API neste arquivo. Ele deve ter o seguinte formato:
+    * Adicione suas chaves de API:
         ```env
         OPENAI_API_KEY="sk-suaChaveDaOpenAIaqui"
         COHERE_API_KEY="suaChaveDaCohereAqui"
         ```
-    * Substitua pelos seus valores reais.
 
 ## 5. Funcionalidades Principais e Scripts
 
-O projeto é modularizado nos seguintes scripts dentro do diretório `src/`:
-
 * **`document_processor.py`:**
-    * `DocumentProcessor`: Lê o arquivo `.txt`, divide o texto em chunks usando `TokenTextSplitter` do LangChain (com `CHUNK_SIZE` de `configs.py` e 50% de overlap).
-    * `ContextGenerator`: Para cada chunk, gera um "contexto de ponte" usando `gpt-4o-mini` e os chunks adjacentes. Salva os chunks e seus contextos em um arquivo JSON (ex: `src/data/NomeDoDoc_chunks_with_context_adj.json`).
+    * `DocumentProcessor`: Lê o arquivo `.txt` e o divide em chunks usando `TokenTextSplitter` do LangChain. A configuração atual em `configs.py` define `CHUNK_SIZE` (padrão 500 tokens) e o `document_processor.py` aplica uma **sobreposição (overlap) de 50%** entre os chunks.
+    * `ContextGenerator`: Para cada chunk, gera um "contexto de ponte" utilizando `gpt-4o-mini`. Este modelo recebe o chunk atual, o anterior e o próximo, e é guiado por um prompt detalhado com exemplos de "como fazer" e "como não fazer" para criar um resumo contextualizador. Os resultados são salvos em um arquivo JSON.
+
 * **`simple_vectorDB.py`:**
-    * `SimpleVectorDB`: Carrega os dados do JSON. Cria um texto combinado (chunk original + contexto de ponte) para cada entrada e gera embeddings usando `text-embedding-3-small` da OpenAI. Armazena embeddings e metadados em um arquivo Pickle (`.pkl`) para persistência. Realiza buscas por similaridade e oferece reranking opcional dos resultados (usando o texto original do chunk) com `rerank-multilingual-v3.0` da Cohere.
+    * `SimpleVectorDB`: Carrega os dados do JSON (chunks e seus contextos de ponte).
+    * Cria um **texto combinado** (`chunk original + contexto de ponte gerado`) para cada entrada.
+    * Gera **embeddings** para esses textos combinados usando `text-embedding-3-small` da OpenAI.
+    * Armazena os embeddings e metadados (incluindo o chunk original e o contexto de ponte separadamente) em um arquivo Pickle (`.pkl`) para persistência.
+    * Realiza buscas por similaridade e oferece **reranking opcional** dos resultados (usando o texto original do chunk) com `rerank-multilingual-v3.0` da Cohere. A lógica de retorno para buscas sem reranking foi corrigida para respeitar o parâmetro `k`.
+
 * **`agent.py`:**
     * `Agent`: Orquestra o pipeline RAG usando LangGraph.
-        * Recebe a query do usuário.
-        * Utiliza o `ContextGenerator` e `SimpleVectorDB` (através da ferramenta `search_text`) para buscar informações relevantes.
-        * Opcionalmente aplica HyDE para refinar a query de busca.
-        * Opcionalmente aplica um threshold de similaridade aos resultados.
-        * Injeta os chunks recuperados e seus contextos de ponte em um prompt para o `gpt-4o-mini`.
-        * Gera a resposta final ao usuário.
-        * Implementa memória conversacional usando `RunnableWithMessageHistory` para manter o contexto entre múltiplas interações na mesma sessão.
+    * Implementa **memória conversacional** usando `RunnableWithMessageHistory`, permitindo que o agente lembre de interações anteriores dentro de uma mesma sessão.
+    * Utiliza um **prompt de sistema principal (`AGENT_SYSTEM_PROMPT_TEXT`) embutido** que guia o `gpt-4o-mini` sobre seu papel, quando e como usar a ferramenta `search_text`, e como lidar com a ausência de resultados.
+    * Opcionalmente aplica a técnica **HyDE** para refinar a query de busca.
+    * Chama a ferramenta `search_text` (que interage com `ContextGenerator` e `SimpleVectorDB`) para buscar informações.
+    * Opcionalmente aplica um **threshold de similaridade** aos resultados (lógica agora mais integrada ao fluxo de decisão do LLM com base no output da ferramenta).
+    * Gera a resposta final ao usuário com base no contexto recuperado e no histórico da conversa.
+
 * **`configs.py`:**
-    * Centraliza flags e parâmetros como `USE_RERANK`, `USE_THRESHOLD`, `SIMILARITY_THRESHOLD`, `USE_HYDE`, e `CHUNK_SIZE`.
-* **`prompts.py` (Presumido):**
-    * O script `agent.py` fornecido ainda importa `NOT_ENOUGH_CONTEXT_MSG` e `SIMPLE_PROMPT` de `from .prompts import ...`. Portanto, este arquivo deve existir em `src/` e conter estas constantes de string, ou os prompts precisam ser embutidos diretamente em `agent.py` (conforme discutimos anteriormente).
-        * *(Nota: A última versão do `agent.py` que refinei para você já embutia o `AGENT_SYSTEM_PROMPT_TEXT`. Se você estiver usando essa versão, o `prompts.py` pode não ser mais necessário para essas constantes específicas.)*
+    * Centraliza flags e parâmetros como `USE_RERANK` (padrão `False`), `USE_THRESHOLD` (padrão `True`), `SIMILARITY_THRESHOLD` (padrão `0.5`), `USE_HYDE` (padrão `False`), e `CHUNK_SIZE` (padrão `500` tokens). A variável `MODEL_EMBED` foi removida por não estar em uso.
 
 ## 6. Como Usar o Agente
 
-Após a configuração e instalação das dependências:
+Após a configuração completa:
 
-1.  **Certifique-se de que o documento de texto** (ex: `Dom_Casmurro.txt`) está no diretório `src/data/`.
-2.  **Execute o script do agente:**
-    Navegue até o diretório raiz do projeto (`RAG-RERANKING-AGENT/`) e execute o agente como um módulo (isso garante que as importações relativas funcionem corretamente):
+1.  **Verifique o Documento:** Certifique-se de que o arquivo de texto (ex: `Dom_Casmurro.txt`) está no diretório `src/data/`.
+2.  **Execute o Script do Agente:**
+    No terminal, a partir do diretório raiz do projeto (`RAG-RERANKING-AGENT/`), execute:
     ```bash
-    python -m src.agent 
+    python -m src.agent
     ```
-    Alternativamente, se estiver dentro do diretório `src/`:
-    ```bash
-    python agent.py
-    ```
-3.  **Interaja com o Agente:**
-    * O script iniciará um loop de chat no terminal.
-    * Você verá uma mensagem como "Agente pronto. Sessão ID: ... Digite 'sair' para terminar."
-    * Digite sua pergunta e pressione Enter.
-    * Para encerrar a conversa, digite `sair`, `exit` ou `quit`.
+3.  **Interaja:**
+    * O script iniciará e mostrará: "Iniciando Agente Conversacional de Documentos..." seguido por "Agente pronto. Sessão ID: ... Digite 'sair' para terminar."
+    * Digite suas perguntas sobre o documento no prompt "Você: " e pressione Enter.
+    * Para encerrar a conversa, digite `sair`.
 
-    **Observação sobre a Primeira Execução:** A primeira vez que você fizer uma pergunta sobre um novo documento, o sistema precisará:
-    * Gerar os contextos de ponte para todos os chunks (envolvendo múltiplas chamadas à API do `gpt-4o-mini`).
-    * Gerar os embeddings para todos os chunks (envolvendo múltiplas chamadas à API `text-embedding-3-small`).
-    Isso pode levar um tempo considerável dependendo do tamanho do documento. Nas execuções subsequentes para o mesmo documento, os dados processados (JSON e `.pkl`) serão carregados do disco, tornando as respostas muito mais rápidas.
+    **Primeira Execução para um Novo Documento:**
+    Se for a primeira vez que o agente é executado com um novo `doc_path` (ou se os arquivos processados em `src/data/` forem removidos), o sistema realizará todo o pré-processamento:
+    * Geração de contextos de ponte para todos os chunks (pode levar tempo e consumir tokens da API OpenAI).
+    * Geração de embeddings para todos os chunks combinados (também consome tokens da API OpenAI).
+    As execuções subsequentes para o mesmo documento carregarão os dados processados do disco, tornando o início e as buscas muito mais rápidos.
 
-## 7. Engenharia de Prompt Aplicada [cite: 3]
+## 7. Engenharia de Prompt Aplicada
 
-A engenharia de prompt foi crucial em duas áreas principais:
+A engenharia de prompt é um componente chave deste projeto:
 
 1.  **Geração de "Contexto de Ponte" (`document_processor.py` -> `ContextGenerator.situate_context`):**
-    * **Objetivo:** Criar um resumo curto e informativo para cada chunk que o situe em relação aos seus vizinhos (anterior e próximo), melhorando a relevância para buscas.
-    * **Técnicas Aplicadas:**
-        * **Prompt Detalhado com Instruções Claras:** O prompt especifica o formato da saída (frase única, concisa), o que deve ser destacado (função/desenvolvimento do chunk principal em relação aos vizinhos), e o que deve ser evitado.
-        * **Instruções Negativas Explícitas:** A instrução "**EVITAR OBRIGATORIAMENTE** iniciar com expressões como 'Este trecho...', 'O Pedaço Principal...'" foi adicionada para combater respostas formulaicas.
-        * **Exemplos (Few-Shot/One-Shot com Negativo):** O prompt inclui exemplos de "COMO NÃO FAZER" (Saída Ruim) e "COMO FAZER" (Saída Ideal), demonstrando o estilo de resposta esperado e os erros a serem evitados. Isso ajuda o modelo a entender melhor a tarefa.
-        * *(Observação: Na versão atual do `document_processor.py` fornecida, as linhas "Motivo do erro/acerto..." nos exemplos estão incluídas no prompt enviado à IA. Para otimização, essas linhas de "motivo" poderiam ser removidas do prompt final, pois são mais para entendimento humano).*
+    * O prompt para `gpt-4o-mini` é estruturado para receber o chunk anterior, o principal e o seguinte.
+    * Contém instruções detalhadas sobre o objetivo (criar uma frase curta e informativa que sirva como "contexto de ponte"), o formato da saída (concisão, idealmente 15-30 palavras), e restrições importantes (como **EVITAR OBRIGATORIAMENTE** frases de abertura formulaicas como "Este trecho...").
+    * Inclui exemplos positivos e negativos (`COMO FAZER` e `COMO NÃO FAZER`) para ilustrar o comportamento desejado. As linhas "Motivo do erro/acerto..." estão presentes no prompt atual enviado ao LLM; para uma versão final, essas poderiam ser removidas do prompt literal, pois o LLM aprende pelo padrão entrada/saída dos exemplos.
 
-2.  **Geração da Resposta Final do Agente (`agent.py` -> `AGENT_SYSTEM_PROMPT_TEXT`):**
-    * **Objetivo:** Instruir o LLM principal sobre como se comportar, como usar a ferramenta de busca (`search_text`), e como formular respostas baseadas no contexto recuperado e no histórico da conversa.
-    * **Técnicas Aplicadas:**
-        * **Definição de Persona e Objetivo:** "Você é um assistente de IA especializado no conteúdo de um documento fornecido..."
-        * **Instrução de Uso de Ferramenta:** Explica claramente quando e como o LLM DEVE usar a ferramenta `search_text`.
-        * **Tratamento de Casos Específicos:** Instrui o LLM sobre como responder se a ferramenta retornar "Nenhum resultado relevante encontrado...".
-        * **Foco na Qualidade da Resposta:** Pede respostas precisas, concisas e que integrem naturalmente a informação.
-        * **Consciência do Histórico:** Lembra o LLM de considerar o histórico da conversa.
+2.  **Prompt de Sistema Principal do Agente (`agent.py` -> `AGENT_SYSTEM_PROMPT_TEXT`):**
+    * Este prompt é embutido diretamente no `agent.py` e define a persona e o fluxo de trabalho do agente `gpt-4o-mini`.
+    * Instrui o LLM a se considerar um especialista no documento.
+    * Especifica que ele **DEVE OBRIGATORIAMENTE** usar a ferramenta `search_text` para perguntas que busquem informações no documento.
+    * Detalha como o LLM deve formular a query para a ferramenta `search_text` (baseada na pergunta original do usuário).
+    * Instrui sobre como agir com base no resultado da ferramenta `search_text`, incluindo como responder se a ferramenta retornar "Nenhum resultado relevante encontrado...".
+    * Reforça a necessidade de usar apenas informações recuperadas, lembrar do histórico e responder em português.
 
-3.  **HyDE (Hypothetical Document Embeddings) (`agent.py` -> `search_text`):**
-    * Se ativado (`USE_HYDE = True`), um prompt específico é usado para fazer o `gpt-4o-mini` gerar uma resposta hipotética à pergunta do usuário. Essa resposta hipotética, que se espera estar semanticamente mais próxima dos chunks relevantes, é então usada para a busca vetorial.
+3.  **HyDE (`agent.py` -> `search_text`):**
+    * Se `USE_HYDE = True`, um prompt específico é usado para que o `gpt-4o-mini` gere uma resposta/documento hipotético com base na query do usuário, e essa resposta hipotética é usada para a busca vetorial.
 
-## 8. Mitigação de Viés (Bias) [cite: 5]
+## 8. Mitigação de Viés (Bias)
 
-Mitigar completamente o viés em LLMs é um desafio complexo e contínuo. Neste projeto, as seguintes abordagens contribuem para reduzir o impacto de vieses potenciais e promover respostas mais neutras e baseadas em fatos do documento:
+A mitigação de viés em LLMs é um esforço contínuo. As abordagens neste projeto que contribuem para reduzir seu impacto incluem:
 
-1.  **Fundamentação no Documento (RAG):** A principal estratégia é o próprio RAG. Ao forçar o LLM a basear suas respostas em trechos recuperados do documento fonte, reduz-se a chance de ele gerar informações baseadas apenas em seus dados de treinamento internos, que podem conter vieses. O `AGENT_SYSTEM_PROMPT_TEXT` reforça: "use os trechos e contextos fornecidos pela ferramenta para formular uma resposta precisa e concisa".
-2.  **Contextualização Local:** A geração de "contextos de ponte" usando apenas chunks adjacentes foca em informações locais, em vez de tentar uma interpretação do documento inteiro que poderia ser mais suscetível a vieses do LLM ao preencher lacunas.
-3.  **Prompts Específicos e Neutros:**
-    * As instruções nos prompts (tanto para gerar o contexto de ponte quanto para a resposta final do agente) são formuladas para serem o mais objetivas possível, focando na tarefa e no conteúdo.
-    * Evitar linguagem carregada ou que possa induzir o LLM a respostas tendenciosas.
-4.  **Ausência de Fine-tuning Específico:** Este projeto utiliza modelos pré-treinados (`gpt-4o-mini`). Se fosse realizado um fine-tuning, a seleção e curadoria de um dataset de fine-tuning diverso e imparcial seria uma etapa crucial para mitigação de viés.
-5.  **Transparência (Implícita):** Ao apresentar os trechos recuperados (com score de similaridade) junto à resposta, o sistema oferece uma forma (ainda que não direta ao usuário final no output do chat) de verificar a base da resposta do LLM. Em sistemas mais avançados, citar as fontes diretamente na resposta ao usuário é uma boa prática.
+1.  **Fundamentação no Documento (RAG):** A principal estratégia é o RAG. O `AGENT_SYSTEM_PROMPT_TEXT` instrui o LLM a basear suas respostas *exclusivamente* nos trechos recuperados do documento, o que limita a geração de informações baseadas apenas em seus dados de treinamento e potenciais vieses neles contidos.
+2.  **Contextualização Focada:** A geração de "contextos de ponte" usa um escopo limitado (chunks adjacentes), o que pode reduzir a chance de o LLM introduzir vieses amplos ao interpretar o documento.
+3.  **Prompts Objetivos:** As instruções nos prompts são formuladas para serem diretas e focadas na tarefa, buscando respostas baseadas em fatos do texto.
+4.  **Escolha do Modelo:** Utiliza-se um modelo de fundação (`gpt-4o-mini`) sem fine-tuning específico neste projeto, o que significa que os vieses seriam os inerentes ao modelo pré-treinado.
 
-**Limitações e Próximos Passos para Mitigação de Viés:**
-* O viés pode estar presente no documento fonte. O agente refletirá o conteúdo do documento.
-* Modelos LLM, mesmo os mais avançados, podem exibir vieses inerentes aos seus dados de treinamento.
-* **Melhorias Futuras:** Poderiam incluir técnicas como a solicitação explícita ao LLM para considerar múltiplas perspectivas, evitar generalizações indevidas, ou a utilização de ferramentas de análise de viés nas respostas geradas.
+É importante notar que o viés pode estar presente no próprio documento fonte, e o agente, por ser baseado nele, pode refletir esse viés. A mitigação completa exigiria técnicas mais avançadas, avaliação contínua e, possivelmente, curadoria de dados e fine-tuning específico, que estão fora do escopo deste projeto experimental.
 
-## 9. Configurações Adicionais (`configs.py`)
+## 9. Configurações (`configs.py`)
 
-O arquivo `src/configs.py` permite ajustar o comportamento do agente:
+O arquivo `src/configs.py` permite ajustar rapidamente alguns comportamentos do agente:
 * `USE_RERANK`: Ativa/desativa o reranking com Cohere.
-* `USE_THRESHOLD`: Ativa/desativa a filtragem por similaridade.
-* `SIMILARITY_THRESHOLD`: Define o limiar de similaridade.
+* `USE_THRESHOLD`: Ativa/desativa a filtragem por similaridade na busca.
+* `SIMILARITY_THRESHOLD`: O limiar de similaridade para considerar um chunk relevante.
 * `USE_HYDE`: Ativa/desativa a busca com HyDE.
-* `CHUNK_SIZE`: Define o tamanho dos chunks em tokens.
+* `CHUNK_SIZE`: O tamanho dos chunks em tokens.
 
-Consulte e modifique este arquivo para experimentar diferentes configurações.
+Experimente com esses valores para otimizar o desempenho para diferentes documentos ou tipos de query.
 
 ---
